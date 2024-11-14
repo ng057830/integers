@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador Matemático</title>
+    <!-- MathJax para renderizar LaTeX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <!-- Estilos CSS actualizados para un diseño moderno -->
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f6fa;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+            --text-color: #2c3e50;
+            --background-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--background-color);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-top: 40px;
+        }
+
+        .welcome-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .panel {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .problem-panel {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .work-panel {
+            background-color: var(--background-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .hints-panel {
+            background-color: #fff8e1;
+        }
+
+        .math-keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .primary-button {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .primary-button:hover {
+            background-color: #357abd;
+        }
+
+        .hint-button {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .keyboard-button {
+            background-color: #f0f0f0;
+            flex: 1 0 22%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 50px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1.2em;
+        }
+
+        .feedback {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: none;
+            font-size: 1.1em;
+        }
+
+        .feedback.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .feedback.hint {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .feedback.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .math-keyboard {
+                gap: 5px;
+            }
+
+            .keyboard-button {
+                flex: 1 0 48%;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Pantalla de Bienvenida -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <h1>Explorador Matemático</h1>
+            <h2>Resolviendo Operaciones Mixtas</h2>
+            <p>Aprenderás a resolver operaciones matemáticas complejas paso a paso.
+               Usa las pistas si te atascas. ¡Diviértete aprendiendo!</p>
+            <button class="primary-button" onclick="startGame()">Comenzar</button>
+        </div>
+
+        <!-- Pantalla del Juego -->
+        <div class="game-screen" id="gameScreen">
+            <!-- Panel del Problema -->
+            <div class="panel problem-panel">
+                <h3>Problema Actual</h3>
+                <div id="currentProblem"></div>
+            </div>
+
+            <!-- Panel de Trabajo -->
+            <div class="panel work-panel">
+                <h3>Área de Trabajo</h3>
+                <div id="workArea">
+                    <input type="text" id="solution" placeholder="Escribe tu respuesta aquí">
+                    <button class="primary-button" onclick="validateStep()">Validar Paso</button>
+                    <button class="primary-button" onclick="resetStep()">Reiniciar Paso</button>
+                </div>
+                <div id="feedback" class="feedback"></div>
+            </div>
+
+            <!-- Panel de Pistas -->
+            <div class="panel hints-panel">
+                <h3>Pistas</h3>
+                <button class="hint-button" onclick="showHint()">Mostrar Pista</button>
+                <div id="hintText" class="feedback hint"></div>
+            </div>
+
+            <!-- Teclado Matemático -->
+            <div class="math-keyboard">
+                <button class="keyboard-button" onclick="insertSymbol('(')"><span>\( ( \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol(')')"><span>\( ) \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('^')"><span>\( ^ \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('/')"><span>\( \div \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('7')"><span>\( 7 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('8')"><span>\( 8 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('9')"><span>\( 9 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('*')"><span>\( \times \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('4')"><span>\( 4 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('5')"><span>\( 5 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('6')"><span>\( 6 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('-')"><span>\( - \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('1')"><span>\( 1 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('2')"><span>\( 2 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('3')"><span>\( 3 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('+')"><span>\( + \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('0')"><span>\( 0 \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('.')"><span>\( . \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('\\frac{}{}')"><span>\( \frac{ }{ } \)</span></button>
+                <button class="keyboard-button" onclick="insertSymbol('\\sqrt{}')"><span>\( \sqrt{ } \)</span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de MathJax
+        MathJax.Hub.Config({
+            tex2jax: {
+                inlineMath: [['$','$'], ['\\(','\\)']],
+                processEscapes: true
+            },
+            "HTML-CSS": { linebreaks: { automatic: true } },
+            SVG: { linebreaks: { automatic: true } },
+            messageStyle: "none"
+        });
+
+        // Ejercicios disponibles (corregidos en LaTeX)
+        const exercises = [
+            {
+                problem: "12 + 3 \\times (5 - 2)",
+                solution: 21,
+                hints: [
+                    "Primero resuelve lo que está dentro de los paréntesis.",
+                    "Calcula \\(5 - 2\\).",
+                    "Luego multiplica el resultado por 3 y suma 12."
+                ]
+            },
+            {
+                problem: "-7 + \\dfrac{14}{2 + 5} - 3",
+                solution: -8,
+                hints: [
+                    "Resuelve primero \\(2 + 5\\) en el denominador.",
+                    "Divide 14 entre el resultado anterior.",
+                    "Finalmente, suma y resta en orden."
+                ]
+            },
+            {
+                problem: "8 \\times (3 - 4) + 2^3",
+                solution: 0,
+                hints: [
+                    "Resuelve la operación dentro de los paréntesis.",
+                    "Recuerda que \\(2^3\\) es 2 elevado a la 3.",
+                    "Suma los resultados obtenidos."
+                ]
+            },
+            {
+                problem: "\\dfrac{15}{3} + 7 \\times (8 - 6)",
+                solution: 19,
+                hints: [
+                    "Simplifica la fracción \\(\\dfrac{15}{3}\\).",
+                    "Calcula \\(8 - 6\\) dentro del paréntesis.",
+                    "Multiplica y suma los resultados."
+                ]
+            },
+            {
+                problem: "-14 + 7 \\times 78 \\left(14 - 7 \\times 78 - \\dfrac{7}{5}\\right) + \\dfrac{1}{2}",
+                solution: -42650.5,
+                hints: [
+                    "Empieza por resolver las operaciones dentro de los paréntesis.",
+                    "Calcula \\(7 \\times 78\\) y \\(\\dfrac{7}{5}\\).",
+                    "Continúa resolviendo paso a paso siguiendo el orden de operaciones."
+                ]
+            },
+            {
+                problem: "5^2 - 4 \\times (3 + 7)",
+                solution: 5,
+                hints: [
+                    "Calcula \\(5^2\\) primero.",
+                    "Resuelve el paréntesis \\(3 + 7\\).",
+                    "Multiplica y resta los resultados."
+                ]
+            },
+            {
+                problem: "\\sqrt{81} + \\dfrac{18}{2}",
+                solution: 27,
+                hints: [
+                    "Calcula la raíz cuadrada de 81.",
+                    "Simplifica la fracción \\(\\dfrac{18}{2}\\).",
+                    "Suma los resultados."
+                ]
+            },
+            {
+                problem: "\\dfrac{(6 - 2)^3}{8}",
+                solution: 8,
+                hints: [
+                    "Resuelve el paréntesis \\(6 - 2\\).",
+                    "Eleva el resultado al cubo.",
+                    "Divide entre 8."
+                ]
+            },
+            {
+                problem: "10 + [3 \\times (2^2 + 1)]",
+                solution: 22,
+                hints: [
+                    "Calcula \\(2^2\\) y suma 1.",
+                    "Multiplica el resultado por 3.",
+                    "Suma 10 al resultado."
+                ]
+            },
+            {
+                problem: "\\dfrac{(7 + 3) \\times 2}{5}",
+                solution: 4,
+                hints: [
+                    "Suma \\(7 + 3\\).",
+                    "Multiplica el resultado por 2.",
+                    "Divide entre 5."
+                ]
+            }
+        ];
+
+        let currentExercise = 0;
+        let currentHint = 0;
+
+        function startGame() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            loadExercise(currentExercise);
+        }
+
+        function loadExercise(index) {
+            const exercise = exercises[index];
+            document.getElementById('currentProblem').innerHTML = `$$${exercise.problem}$$`;
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            currentHint = 0;
+            document.getElementById('solution').value = "";
+            document.getElementById('feedback').style.display = "none";
+            document.getElementById('hintText').style.display = "none";
+        }
+
+        function validateStep() {
+            const solution = document.getElementById('solution').value.trim();
+            const feedback = document.getElementById('feedback');
+            const expectedSolution = exercises[currentExercise].solution;
+            const parsedSolution = parseFloat(solution.replace(',', '.'));
+
+            if (parsedSolution === expectedSolution) {
+                feedback.innerHTML = "¡Excelente trabajo! Has resuelto correctamente el ejercicio.";
+                feedback.className = "feedback success";
+                feedback.style.display = "block";
+
+                // Preparar siguiente ejercicio
+                setTimeout(() => {
+                    currentExercise++;
+                    if (currentExercise < exercises.length) {
+                        loadExercise(currentExercise);
+                    } else {
+                        // Juego completado
+                        alert("¡Felicitaciones! Has completado todos los ejercicios.");
+                        location.reload();
+                    }
+                }, 2000);
+            } else {
+                feedback.innerHTML = "Casi lo tienes. Revisa tus cálculos y vuelve a intentarlo.";
+                feedback.className = "feedback error";
+                feedback.style.display = "block";
+            }
+        }
+
+        function showHint() {
+            const hintText = document.getElementById('hintText');
+            const hints = exercises[currentExercise].hints;
+            if (currentHint < hints.length) {
+                hintText.innerHTML = hints[currentHint];
+                hintText.style.display = "block";
+                currentHint++;
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            } else {
+                hintText.innerHTML = "No hay más pistas disponibles para este ejercicio.";
+            }
+        }
+
+        function resetStep() {
+            document.getElementById('solution').value = "";
+            document.getElementById('feedback').style.display = "none";
+            document.getElementById('hintText').style.display = "none";
+            currentHint = 0;
+        }
+
+        function insertSymbol(symbol) {
+            const solution = document.getElementById('solution');
+            const cursorPos = solution.selectionStart;
+            const textBefore = solution.value.substring(0, cursorPos);
+            const textAfter = solution.value.substring(cursorPos);
+            let symbolToInsert = symbol;
+
+            if (symbol === '\\frac{}{}') {
+                symbolToInsert = '\\frac{ }{ }';
+            } else if (symbol === '\\sqrt{}') {
+                symbolToInsert = '\\sqrt{ }';
+            }
+
+            solution.value = textBefore + symbolToInsert + textAfter;
+            solution.focus();
+            solution.setSelectionRange(cursorPos + symbolToInsert.length, cursorPos + symbolToInsert.length);
+        }
+
+        // Renderizar los símbolos LaTeX en los botones del teclado
+        document.addEventListener("DOMContentLoaded", function() {
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+        });
+    </script>
+</body>
+</html>
